@@ -1,0 +1,66 @@
+# Invenio dependency is Ubuntu:14.04
+FROM ubuntu:trusty
+MAINTAINER Adam Lawrence <alaw005@gmail.com>
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	nano \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Required for nano to work
+ENV TERM=xterm
+
+COPY ./scripts /scripts
+
+# Invenio environment variables
+# http://invenio.readthedocs.io/en/latest/installation/installation-detailed.html#environment-variables
+ENV INVENIO_USER_EMAIL=info@inveniosoftware.org
+ENV INVENIO_USER_PASS=uspass123
+ENV INVENIO_WEB_HOST=127.0.0.1
+ENV INVENIO_WEB_INSTANCE=invenio3
+ENV INVENIO_WEB_VENV=invenio3
+ENV INVENIO_POSTGRESQL_HOST=127.0.0.1
+ENV INVENIO_POSTGRESQL_DBNAME=invenio3
+ENV INVENIO_POSTGRESQL_DBUSER=invenio3
+ENV INVENIO_POSTGRESQL_DBPASS=dbpass123
+ENV INVENIO_REDIS_HOST=127.0.0.1
+ENV INVENIO_ELASTICSEARCH_HOST=127.0.0.1
+ENV INVENIO_RABBITMQ_HOST=127.0.0.1
+ENV INVENIO_WORKER_HOST=127.0.0.1
+
+# Add provisioning scripts
+COPY ./scripts /scripts
+
+# Invenio web
+# http://invenio.readthedocs.io/en/latest/installation/installation-detailed.html#web
+RUN scripts/provision-web.sh
+
+# Invenio database
+# http://invenio.readthedocs.io/en/latest/installation/installation-detailed.html#database
+RUN scripts/provision-postgresql.sh
+
+# Invenio Redis
+# http://invenio.readthedocs.io/en/latest/installation/installation-detailed.html#id1
+RUN scripts/provision-redis.sh
+
+# Invenio Elasticsearch
+# http://invenio.readthedocs.io/en/latest/installation/installation-detailed.html#id2
+RUN scripts/provision-elasticsearch.sh
+
+# Invenio RabbitMQ
+# http://invenio.readthedocs.io/en/latest/installation/installation-detailed.html#id3
+RUN scripts/provision-rabbitmq.sh
+
+# Invenio Celery worker
+# http://invenio.readthedocs.io/en/latest/installation/installation-detailed.html#worker
+RUN scripts/provision-worker.sh
+
+# Invenio
+# http://invenio.readthedocs.io/en/latest/installation/installation-detailed.html#invenio
+RUN scripts/create-instance.sh
+RUN scripts/start-instance.sh
+RUN scripts/populate-instance.sh
+
+# Start the Invenio application:
+CMD ["/bin/bash", "-c", "invenio3 run -h 0.0.0.0"]
+
